@@ -72,3 +72,10 @@ buck-out/
 \.buckd/
 android/app/libs
 android/keystores/debug.keystore
+
+.babelrc
+.eslintrc
+.gitignore
+.npmignore
+.travis.yml
+ExampleApp
