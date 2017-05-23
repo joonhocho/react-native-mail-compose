@@ -21,7 +21,7 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
     ]
   }
   
-  @objc func canSendMail(resolve: RCTPromiseResolveBlock, reject: RCTPromiseRejectBlock) {
+  @objc func canSendMail(_ resolve: RCTPromiseResolveBlock, reject: RCTPromiseRejectBlock) {
     return resolve(MFMailComposeViewController.canSendMail())
   }
   
