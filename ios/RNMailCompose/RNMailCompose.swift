@@ -82,7 +82,11 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
     self.resolve = resolve
     self.reject = reject
     
-    UIApplication.shared.keyWindow?.rootViewController?.present(vc, animated: true, completion: nil)
+    var rootVC = UIApplication.shared.keyWindow?.rootViewController;
+    while (rootVC?.presentedViewController != nil) {
+      rootVC = rootVC?.presentedViewController;
+    }
+    rootVC?.present(vc, animated: true, completion: nil)
   }
   
   func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
