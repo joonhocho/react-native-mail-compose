@@ -14,8 +14,7 @@
 
 @interface RCT_EXTERN_MODULE(RNMailCompose, NSObject)
 
-RCT_EXTERN_METHOD(canSendMail:
-                  resolve:(RCTPromiseResolveBlock)resolve
+RCT_EXTERN_METHOD(canSendMail:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject);
 
 RCT_EXTERN_METHOD(send:(NSDictionary *)data
