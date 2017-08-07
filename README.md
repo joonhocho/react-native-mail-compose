@@ -1,6 +1,8 @@
 # react-native-mail-compose
 React Native library for composing email. Wraps MFMailComposeViewController for iOS and Intent for Android.
 
+For composing text message, check out [joonhocho/react-native-message-compose](https://github.com/joonhocho/react-native-message-compose).
+
 
 ## Getting started
 
