@@ -1,7 +1,7 @@
 
 {
   "name": "react-native-mail-compose",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "React Native library for composing email. Wraps MFMailComposeViewController for iOS and Intent for Android.",
   "main": "index.js",
   "scripts": {
