@@ -79,14 +79,12 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
     
     vc.mailComposeDelegate = self
     
-    self.resolve = resolve
-    self.reject = reject
-    
-    var rootVC = UIApplication.shared.keyWindow?.rootViewController;
-    while (rootVC?.presentedViewController != nil) {
-      rootVC = rootVC?.presentedViewController;
+    if present(viewController: vc) {
+      self.resolve = resolve
+      self.reject = reject
+    } else {
+      reject("failed", "Could not present view controller", nil)
     }
-    rootVC?.present(vc, animated: true, completion: nil)
   }
   
   func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
@@ -109,4 +107,32 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
     
     controller.dismiss(animated: true, completion: nil)
   }
+  
+  func getTopViewController(window: UIWindow?) -> UIViewController? {
+    if let window = window {
+      var top = window.rootViewController
+      while true {
+        if let presented = top?.presentedViewController {
+          top = presented
+        } else if let nav = top as? UINavigationController {
+          top = nav.visibleViewController
+        } else if let tab = top as? UITabBarController {
+          top = tab.selectedViewController
+        } else {
+          break
+        }
+      }
+      return top
+    }
+    return nil
+  }
+  
+  func present(viewController: UIViewController) -> Bool {
+    if let topVc = getTopViewController(window: UIApplication.shared.keyWindow) {
+      topVc.present(viewController, animated: true, completion: nil)
+      return true
+    }
+    return false
+  }
 }
+
