@@ -313,7 +313,9 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
             putExtra(intent, Intent.EXTRA_TEXT, Html.fromHtml(html));
             putExtra(intent, Intent.EXTRA_HTML_TEXT, Html.fromHtml(html));
         } else {
-            intent.setType("text/plain");
+            // intent.setType("text/plain");
+            intent.setType("message/rfc822");
+
             if (!isEmpty(text)) {
                 putExtra(intent, Intent.EXTRA_TEXT, text);
             }
