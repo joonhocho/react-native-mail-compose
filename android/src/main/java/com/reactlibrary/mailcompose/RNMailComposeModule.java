@@ -47,11 +47,13 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent intent) {
             if (requestCode == ACTIVITY_SEND) {
                 if (mPromise != null) {
-                    if (resultCode == Activity.RESULT_CANCELED) {
+                    /*if (resultCode == Activity.RESULT_CANCELED) {
                         mPromise.reject("cancelled", "Operation has been cancelled");
                     } else {
                         mPromise.resolve("sent");
                     }
+                    mPromise = null;*/
+                    mPromise.resolve("unknown");
                     mPromise = null;
                 }
             }
