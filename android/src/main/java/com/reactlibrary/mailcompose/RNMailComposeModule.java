@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Base64;
+import android.support.v4.content.FileProvider;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -35,6 +36,7 @@ import java.util.UUID;
 
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
+    private final ReactApplicationContext reactContext;
     private static final int ACTIVITY_SEND = 129382;
 
     private Promise mPromise;
@@ -45,11 +47,13 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent intent) {
             if (requestCode == ACTIVITY_SEND) {
                 if (mPromise != null) {
-                    if (resultCode == Activity.RESULT_CANCELED) {
+                    /*if (resultCode == Activity.RESULT_CANCELED) {
                         mPromise.reject("cancelled", "Operation has been cancelled");
                     } else {
                         mPromise.resolve("sent");
                     }
+                    mPromise = null;*/
+                    mPromise.resolve("unknown");
                     mPromise = null;
                 }
             }
@@ -59,6 +63,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
     public RNMailComposeModule(final ReactApplicationContext reactContext) {
         super(reactContext);
         reactContext.addActivityEventListener(mActivityEventListener);
+        this.reactContext = reactContext;
     }
 
     @Override
@@ -97,7 +102,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         }
     }
 
-    private void addAttachments(Intent intent, ReadableArray attachments) {
+    private void addAttachments(Intent intent, ReadableArray attachments, String fileProviderUri) {
         if (attachments == null) return;
 
         ArrayList<Uri> uris = new ArrayList<>();
@@ -105,7 +110,14 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
             if (attachments.getType(i) == ReadableType.Map) {
                 ReadableMap attachment = attachments.getMap(i);
                 if (attachment != null) {
-                    byte[] blob = getBlob(attachment, "data");
+                    Uri contentUri = null;
+                    byte[] blob = null;
+                    if (attachment.hasKey("url") && attachment.getType("url") == ReadableType.String && fileProviderUri != null) {
+                      contentUri = FileProvider.getUriForFile(this.reactContext, fileProviderUri, new File(attachment.getString("url")));
+                    } else {
+                      blob = getBlob(attachment, "data");
+                    }
+
                     String text = getString(attachment, "text");
                     // String mimeType = getString(attachment, "mimeType");
                     String filename = getString(attachment, "filename");
@@ -114,12 +126,16 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                     }
                     String ext = getString(attachment, "ext");
 
-                    File tempFile = createTempFile(filename, ext);
+                    File tempFile = null;
 
                     if (blob != null) {
+                        createTempFile(filename, ext);
                         tempFile = writeBlob(tempFile, blob);
                     } else if (text != null) {
+                        createTempFile(filename, ext);
                         tempFile = writeText(tempFile, text);
+                    } else if (contentUri != null) {
+                        uris.add(contentUri);
                     }
 
                     if (tempFile != null) {
@@ -299,7 +315,9 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
             putExtra(intent, Intent.EXTRA_TEXT, Html.fromHtml(html));
             putExtra(intent, Intent.EXTRA_HTML_TEXT, Html.fromHtml(html));
         } else {
-            intent.setType("text/plain");
+            // intent.setType("text/plain");
+            intent.setType("message/rfc822");
+
             if (!isEmpty(text)) {
                 putExtra(intent, Intent.EXTRA_TEXT, text);
             }
@@ -309,7 +327,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         putExtra(intent, Intent.EXTRA_EMAIL, getStringArray(data, "toRecipients"));
         putExtra(intent, Intent.EXTRA_CC, getStringArray(data, "ccRecipients"));
         putExtra(intent, Intent.EXTRA_BCC, getStringArray(data, "bccRecipients"));
-        addAttachments(intent, getArray(data, "attachments"));
+        addAttachments(intent, getArray(data, "attachments"), getString(data, "fileProviderUri"));
 
         intent.putExtra("exit_on_sent", true);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
