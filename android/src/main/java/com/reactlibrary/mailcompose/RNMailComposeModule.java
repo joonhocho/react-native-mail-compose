@@ -1,14 +1,23 @@
 package com.reactlibrary.mailcompose;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.pm.LabeledIntent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Base64;
 import android.support.v4.content.FileProvider;
+import android.util.Log;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -27,13 +36,14 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
@@ -301,46 +311,77 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void send(ReadableMap data, Promise promise) throws IOException {
-        if (mPromise != null) {
-            mPromise.reject("timeout", "Operation has timed out");
-            mPromise = null;
-        }
+         if (mPromise != null) {
+             mPromise.reject("timeout", "Operation has timed out");
+             mPromise = null;
+         }
 
         Intent intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
 
-        String text = getString(data, "body");
-        String html = getString(data, "html");
-        if (!isEmpty(html)) {
-            intent.setType("text/html");
-            putExtra(intent, Intent.EXTRA_TEXT, Html.fromHtml(html));
-            putExtra(intent, Intent.EXTRA_HTML_TEXT, Html.fromHtml(html));
-        } else {
-            // intent.setType("text/plain");
-            intent.setType("message/rfc822");
+         String text = getString(data, "body");
+         String html = getString(data, "html");
+         if (!isEmpty(html)) {
+             intent.setType("text/html");
+             putExtra(intent, Intent.EXTRA_TEXT, Html.fromHtml(html));
+             putExtra(intent, Intent.EXTRA_HTML_TEXT, Html.fromHtml(html));
+         } else {
+             // intent.setType("text/plain");
+             intent.setType("message/rfc822");
 
-            if (!isEmpty(text)) {
-                putExtra(intent, Intent.EXTRA_TEXT, text);
-            }
-        }
+             if (!isEmpty(text)) {
+                 putExtra(intent, Intent.EXTRA_TEXT, text);
+             }
+         }
+         putExtra(intent, Intent.EXTRA_SUBJECT, getString(data, "subject"));
+         putExtra(intent, Intent.EXTRA_EMAIL, getStringArray(data, "toRecipients"));
+         putExtra(intent, Intent.EXTRA_CC, getStringArray(data, "ccRecipients"));
+         putExtra(intent, Intent.EXTRA_BCC, getStringArray(data, "bccRecipients"));
+         addAttachments(intent, getArray(data, "attachments"), getString(data, "fileProviderUri"));
 
-        putExtra(intent, Intent.EXTRA_SUBJECT, getString(data, "subject"));
-        putExtra(intent, Intent.EXTRA_EMAIL, getStringArray(data, "toRecipients"));
-        putExtra(intent, Intent.EXTRA_CC, getStringArray(data, "ccRecipients"));
-        putExtra(intent, Intent.EXTRA_BCC, getStringArray(data, "bccRecipients"));
-        addAttachments(intent, getArray(data, "attachments"), getString(data, "fileProviderUri"));
-
-        intent.putExtra("exit_on_sent", true);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+         intent.putExtra("exit_on_sent", true);
+         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         try {
-            getCurrentActivity().startActivityForResult(Intent.createChooser(intent, "Send Mail"), ACTIVITY_SEND);
-            mPromise = promise;
-        } catch (ActivityNotFoundException e) {
-            promise.reject("failed", "Activity Not Found");
-        } catch (Exception e) {
-            promise.reject("failed", "Unknown Error");
+
+            ArrayList<Intent> mailIntents = getEmailAppLauncherIntents(intent);
+            // PendingIntent pendingIntent = PendingIntent.getActivities(this.reactContext, ACTIVITY_SEND, mailIntents.toArray( new Intent[mailIntents.size()] ), PendingIntent.FLAG_IMMUTABLE);
+
+            //Create chooser
+             Intent chooserIntent = Intent.createChooser(new Intent(), "Select email app:"); // , pendingIntent.getIntentSender());
+
+             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.toArray( new Parcelable[mailIntents.size()] ));
+             getCurrentActivity().startActivityForResult(chooserIntent, ACTIVITY_SEND);
+             mPromise = promise;
+         } catch (ActivityNotFoundException e) {
+             promise.reject("failed", "Activity Not Found");
+         } catch (Exception e) {
+             promise.reject("failed", "Unknown Error");
+         }
+    }
+
+    // Get E-Mail App intents only for share picker (filtered for duplicates)
+    private ArrayList<Intent> getEmailAppLauncherIntents (Intent intent) {
+        ArrayList<Intent> emailAppLauncherIntents = new ArrayList<>();
+
+        // Intent that only email apps can handle:
+        Intent emailAppIntent = new Intent(Intent.ACTION_SENDTO);
+        emailAppIntent.setData(Uri.parse("mailto:"));
+        emailAppIntent.putExtra(Intent.EXTRA_EMAIL, "");
+        emailAppIntent.putExtra(Intent.EXTRA_SUBJECT, "");
+
+        PackageManager packageManager = getCurrentActivity().getPackageManager();
+        // All installed apps that can handle email intent:
+        List<ResolveInfo> emailApps = packageManager.queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
+        ArrayList<String> addedPackages = new ArrayList<>();
+        for (int i = 0; i < emailApps.size(); i++) {
+            String packageName = emailApps.get(i).activityInfo.packageName;
+            if (addedPackages.indexOf(packageName) == -1) {
+                addedPackages.add(packageName);
+                emailAppLauncherIntents.add(((Intent) intent.clone()).setPackage(packageName));
+            }
         }
+        return emailAppLauncherIntents;
     }
 }
 
