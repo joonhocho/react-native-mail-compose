@@ -18,6 +18,7 @@ import android.text.Spanned;
 import android.util.Base64;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -44,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
@@ -347,16 +350,24 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
             ArrayList<Intent> mailIntents = getEmailAppLauncherIntents(intent);
             // PendingIntent pendingIntent = PendingIntent.getActivities(this.reactContext, ACTIVITY_SEND, mailIntents.toArray( new Intent[mailIntents.size()] ), PendingIntent.FLAG_IMMUTABLE);
 
+            if (mailIntents == null || mailIntents.size() == 0) {
+                Toast.makeText(getCurrentActivity(), "No matching app found", Toast.LENGTH_LONG).show();
+                return;
+            }
             //Create chooser
              Intent chooserIntent = Intent.createChooser(new Intent(), "Select email app:"); // , pendingIntent.getIntentSender());
 
              chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.toArray( new Parcelable[mailIntents.size()] ));
              getCurrentActivity().startActivityForResult(chooserIntent, ACTIVITY_SEND);
              mPromise = promise;
+         } catch (NullPointerException e) {
+            promise.reject("failed", "StartActivityForResult failed");
          } catch (ActivityNotFoundException e) {
-             promise.reject("failed", "Activity Not Found");
+            promise.reject("failed", "Activity Not Found");
+         } catch (RuntimeException e) {
+            promise.reject("failed", "External App Probably Cannot Handle Parcelable");
          } catch (Exception e) {
-             promise.reject("failed", "Unknown Error");
+            promise.reject("failed", "Unknown Error");
          }
     }
 
