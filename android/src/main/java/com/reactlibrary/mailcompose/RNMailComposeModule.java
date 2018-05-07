@@ -379,18 +379,24 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
         Intent dataIntent = getDataIntent(data);
         Intent emailAppIntent = getEmailAppIntent();
 
-        // Get All installed apps that can handle email intent
-        PackageManager packageManager = getCurrentActivity().getPackageManager();
-        List<ResolveInfo> emailApps = packageManager.queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
-        ArrayList<String> addedPackages = new ArrayList<>();
-        for (int i = 0; i < emailApps.size(); i++) {
-            String packageName = emailApps.get(i).activityInfo.packageName;
-            if (addedPackages.indexOf(packageName) == -1) {
-                addedPackages.add(packageName);
-                emailAppLauncherIntentsWithData.add(((Intent) dataIntent.clone()).setPackage(packageName));
+        String selectedApp = getString(data, "selectedApp");
+
+        if (selectedApp != null) {
+            // Set selected mail app
+            emailAppLauncherIntentsWithData.add(((Intent) dataIntent.clone()).setPackage(selectedApp));
+        } else {
+            // Get All installed apps that can handle email intent
+            PackageManager packageManager = getCurrentActivity().getPackageManager();
+            List<ResolveInfo> emailApps = packageManager.queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
+            ArrayList<String> addedPackages = new ArrayList<>();
+            for (int i = 0; i < emailApps.size(); i++) {
+                String packageName = emailApps.get(i).activityInfo.packageName;
+                if (addedPackages.indexOf(packageName) == -1) {
+                    addedPackages.add(packageName);
+                    emailAppLauncherIntentsWithData.add(((Intent) dataIntent.clone()).setPackage(packageName));
+                }
             }
         }
-
         return emailAppLauncherIntentsWithData;
     }
 
