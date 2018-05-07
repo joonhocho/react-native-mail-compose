@@ -3,15 +3,13 @@ package com.reactlibrary.mailcompose;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.content.pm.LabeledIntent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.content.res.Resources;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Parcelable;
 import android.text.Html;
 import android.text.Spanned;
@@ -21,7 +19,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.facebook.react.bridge.ActivityEventListener;
-import com.facebook.react.bridge.BaseActivityEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -29,6 +26,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
+import com.facebook.react.bridge.Callback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,7 +35,6 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -46,36 +43,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-
-
-public class RNMailComposeModule extends ReactContextBaseJavaModule {
+public class RNMailComposeModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private final ReactApplicationContext reactContext;
     private static final int ACTIVITY_SEND = 129382;
-
     private Promise mPromise;
-
-    private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
-
-        @Override
-        public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent intent) {
-            if (requestCode == ACTIVITY_SEND) {
-                if (mPromise != null) {
-                    /*if (resultCode == Activity.RESULT_CANCELED) {
-                        mPromise.reject("cancelled", "Operation has been cancelled");
-                    } else {
-                        mPromise.resolve("sent");
-                    }
-                    mPromise = null;*/
-                    mPromise.resolve("unknown");
-                    mPromise = null;
-                }
-            }
-        }
-    };
 
     public RNMailComposeModule(final ReactApplicationContext reactContext) {
         super(reactContext);
-        reactContext.addActivityEventListener(mActivityEventListener);
+        reactContext.addActivityEventListener(this);
         this.reactContext = reactContext;
     }
 
@@ -126,9 +101,9 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                     Uri contentUri = null;
                     byte[] blob = null;
                     if (attachment.hasKey("url") && attachment.getType("url") == ReadableType.String && fileProviderUri != null) {
-                      contentUri = FileProvider.getUriForFile(this.reactContext, fileProviderUri, new File(attachment.getString("url")));
+                        contentUri = FileProvider.getUriForFile(this.reactContext, fileProviderUri, new File(attachment.getString("url")));
                     } else {
-                      blob = getBlob(attachment, "data");
+                        blob = getBlob(attachment, "data");
                     }
 
                     String text = getString(attachment, "text");
@@ -312,87 +287,134 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         return null;
     }
 
+    public static class ChooserBroadcast extends BroadcastReceiver {
+        private static Callback chosenCallback = null;
+
+        public static void setChosenCallback (Callback c) {
+            chosenCallback = c;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String result = String.valueOf(intent.getExtras().get(Intent.EXTRA_CHOSEN_COMPONENT));
+            String chosenComponent = result.substring(result.indexOf("{") + 1, result.indexOf("/"));
+
+            if (chosenCallback != null) {
+                chosenCallback.invoke(chosenComponent);
+            }
+        }
+    }
+
     @ReactMethod
-    public void send(ReadableMap data, Promise promise) throws IOException {
-         if (mPromise != null) {
-             mPromise.reject("timeout", "Operation has timed out");
-             mPromise = null;
-         }
-
-        Intent intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
-
-         String text = getString(data, "body");
-         String html = getString(data, "html");
-         if (!isEmpty(html)) {
-             intent.setType("text/html");
-             putExtra(intent, Intent.EXTRA_TEXT, Html.fromHtml(html));
-             putExtra(intent, Intent.EXTRA_HTML_TEXT, Html.fromHtml(html));
-         } else {
-             // intent.setType("text/plain");
-             intent.setType("message/rfc822");
-
-             if (!isEmpty(text)) {
-                 putExtra(intent, Intent.EXTRA_TEXT, text);
-             }
-         }
-         putExtra(intent, Intent.EXTRA_SUBJECT, getString(data, "subject"));
-         putExtra(intent, Intent.EXTRA_EMAIL, getStringArray(data, "toRecipients"));
-         putExtra(intent, Intent.EXTRA_CC, getStringArray(data, "ccRecipients"));
-         putExtra(intent, Intent.EXTRA_BCC, getStringArray(data, "bccRecipients"));
-         addAttachments(intent, getArray(data, "attachments"), getString(data, "fileProviderUri"));
-
-         intent.putExtra("exit_on_sent", true);
-         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    public void send(ReadableMap data, Promise promise) {
+        if (mPromise != null) {
+            mPromise.reject("timeout", "Operation has timed out");
+            mPromise = null;
+        }
 
         try {
-
-            ArrayList<Intent> mailIntents = getEmailAppLauncherIntents(intent);
-            // PendingIntent pendingIntent = PendingIntent.getActivities(this.reactContext, ACTIVITY_SEND, mailIntents.toArray( new Intent[mailIntents.size()] ), PendingIntent.FLAG_IMMUTABLE);
-
+            // Check if Mail App exists
+            ArrayList<Intent> mailIntents = getEmailAppLauncherIntentsWithData(data);
             if (mailIntents == null || mailIntents.size() == 0) {
                 Toast.makeText(getCurrentActivity(), "No matching app found", Toast.LENGTH_LONG).show();
                 return;
             }
-            //Create chooser
-             Intent chooserIntent = Intent.createChooser(new Intent(), "Select email app:"); // , pendingIntent.getIntentSender());
 
-             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.toArray( new Parcelable[mailIntents.size()] ));
-             getCurrentActivity().startActivityForResult(chooserIntent, ACTIVITY_SEND);
-             mPromise = promise;
-         } catch (NullPointerException e) {
+            // Create chooser
+            Intent chooserIntent = Intent.createChooser(new Intent(), "Select email app:", getIntentSender()); //TODO: handle <22 API devices
+            chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.toArray( new Parcelable[mailIntents.size()] ));
+            getCurrentActivity().startActivityForResult(chooserIntent, ACTIVITY_SEND);
+            mPromise = promise;
+        } catch (NullPointerException e) {
             promise.reject("failed", "StartActivityForResult failed");
-         } catch (ActivityNotFoundException e) {
+        } catch (ActivityNotFoundException e) {
             promise.reject("failed", "Activity Not Found");
-         } catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             promise.reject("failed", "External App Probably Cannot Handle Parcelable");
-         } catch (Exception e) {
+        } catch (Exception e) {
             promise.reject("failed", "Unknown Error");
-         }
+        }
     }
 
-    // Get E-Mail App intents only for share picker (filtered for duplicates)
-    private ArrayList<Intent> getEmailAppLauncherIntents (Intent intent) {
-        ArrayList<Intent> emailAppLauncherIntents = new ArrayList<>();
+    // Create intent for data share
+    private Intent getDataIntent (ReadableMap data) {
+        Intent intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        String text = getString(data, "body");
+        String html = getString(data, "html");
+        if (!isEmpty(html)) {
+            intent.setType("text/html");
+            putExtra(intent, Intent.EXTRA_TEXT, Html.fromHtml(html));
+            putExtra(intent, Intent.EXTRA_HTML_TEXT, Html.fromHtml(html));
+        } else {
+            // intent.setType("text/plain");
+            intent.setType("message/rfc822");
 
-        // Intent that only email apps can handle:
+            if (!isEmpty(text)) {
+                putExtra(intent, Intent.EXTRA_TEXT, text);
+            }
+        }
+        putExtra(intent, Intent.EXTRA_SUBJECT, getString(data, "subject"));
+        putExtra(intent, Intent.EXTRA_EMAIL, getStringArray(data, "toRecipients"));
+        putExtra(intent, Intent.EXTRA_CC, getStringArray(data, "ccRecipients"));
+        putExtra(intent, Intent.EXTRA_BCC, getStringArray(data, "bccRecipients"));
+        addAttachments(intent, getArray(data, "attachments"), getString(data, "fileProviderUri"));
+        intent.putExtra("exit_on_sent", true);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        return intent;
+    }
+
+    // Intent that only email apps can handle
+    private Intent getEmailAppIntent() {
         Intent emailAppIntent = new Intent(Intent.ACTION_SENDTO);
         emailAppIntent.setData(Uri.parse("mailto:"));
         emailAppIntent.putExtra(Intent.EXTRA_EMAIL, "");
         emailAppIntent.putExtra(Intent.EXTRA_SUBJECT, "");
 
+        return emailAppIntent;
+    }
+
+    // Get E-Mail App intents only for share picker (filtered for duplicates)
+    private ArrayList<Intent> getEmailAppLauncherIntentsWithData (ReadableMap data) {
+        ArrayList<Intent> emailAppLauncherIntentsWithData = new ArrayList<>();
+        Intent dataIntent = getDataIntent(data);
+        Intent emailAppIntent = getEmailAppIntent();
+
+        // Get All installed apps that can handle email intent
         PackageManager packageManager = getCurrentActivity().getPackageManager();
-        // All installed apps that can handle email intent:
         List<ResolveInfo> emailApps = packageManager.queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
         ArrayList<String> addedPackages = new ArrayList<>();
         for (int i = 0; i < emailApps.size(); i++) {
             String packageName = emailApps.get(i).activityInfo.packageName;
             if (addedPackages.indexOf(packageName) == -1) {
                 addedPackages.add(packageName);
-                emailAppLauncherIntents.add(((Intent) intent.clone()).setPackage(packageName));
+                emailAppLauncherIntentsWithData.add(((Intent) dataIntent.clone()).setPackage(packageName));
             }
         }
-        return emailAppLauncherIntents;
+
+        return emailAppLauncherIntentsWithData;
+    }
+
+    private IntentSender getIntentSender () {
+        Intent receiverIntent = new Intent(reactContext, ChooserBroadcast.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(reactContext, ACTIVITY_SEND, receiverIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        return pendingIntent.getIntentSender();
+    }
+
+    @Override
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        if (requestCode == ACTIVITY_SEND) {
+
+            if (mPromise != null) {
+                mPromise.resolve("unknown");
+                mPromise = null;
+            }
+        }
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
     }
 }
-
