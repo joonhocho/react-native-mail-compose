@@ -6,8 +6,10 @@ const {RNMailCompose} = NativeModules;
 
 export default {
   name: RNMailCompose.name,
-
-  send(data) {
-    return RNMailCompose.send(data);
+  getLastSelection() {
+    return RNMailCompose.getLastSelection()
   },
+  send(data) {
+    return RNMailCompose.send(data)
+  }
 };

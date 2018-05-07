@@ -26,7 +26,6 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
-import com.facebook.react.bridge.Callback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,6 +45,7 @@ import java.util.UUID;
 public class RNMailComposeModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private final ReactApplicationContext reactContext;
     private static final int ACTIVITY_SEND = 129382;
+    public static String lastSelection = null;
     private Promise mPromise;
 
     public RNMailComposeModule(final ReactApplicationContext reactContext) {
@@ -288,21 +288,18 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
     }
 
     public static class ChooserBroadcast extends BroadcastReceiver {
-        private static Callback chosenCallback = null;
-
-        public static void setChosenCallback (Callback c) {
-            chosenCallback = c;
-        }
-
         @Override
         public void onReceive(Context context, Intent intent) {
             String result = String.valueOf(intent.getExtras().get(Intent.EXTRA_CHOSEN_COMPONENT));
             String chosenComponent = result.substring(result.indexOf("{") + 1, result.indexOf("/"));
 
-            if (chosenCallback != null) {
-                chosenCallback.invoke(chosenComponent);
-            }
+            RNMailComposeModule.lastSelection = chosenComponent;
         }
+    }
+
+    @ReactMethod
+    public void getLastSelection(Promise promise) {
+        promise.resolve(lastSelection);
     }
 
     @ReactMethod
