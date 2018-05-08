@@ -308,6 +308,23 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
     }
 
     @ReactMethod
+    public void hasMailApp(String appName, Promise promise) {
+
+        // Get App infos
+        Intent emailAppIntent = getEmailAppIntent();
+        List<ResolveInfo> emailAppInfos = getCurrentActivity().getPackageManager().queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
+
+        for (int i = 0; i < emailAppInfos.size(); i++) {
+            String packageName = emailAppInfos.get(i).activityInfo.packageName;
+            if (packageName.equals(appName)) {
+                promise.resolve(true);
+                return;
+            }
+        }
+        promise.resolve(false);
+    }
+
+    @ReactMethod
     public void getMailAppData(Promise promise) {
 
         WritableArray emailAppArray = new WritableNativeArray();

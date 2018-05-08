@@ -6,6 +6,9 @@ const {RNMailCompose} = NativeModules;
 
 export default {
   name: RNMailCompose.name,
+  hasMailApp(appName) {
+    return RNMailCompose.hasMailApp(appName)
+  },
   getMailAppData() {
     return RNMailCompose.getMailAppData()
   },
