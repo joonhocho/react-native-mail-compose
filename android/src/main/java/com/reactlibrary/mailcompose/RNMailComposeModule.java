@@ -7,8 +7,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Parcelable;
 import android.text.Html;
@@ -25,7 +30,12 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableNativeArray;
 import com.facebook.react.bridge.ReadableType;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeArray;
+import com.facebook.react.bridge.WritableNativeMap;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -298,8 +308,53 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
     }
 
     @ReactMethod
+    public void getMailAppData(Promise promise) {
+
+        WritableArray emailAppArray = new WritableNativeArray();
+
+        // Get App infos
+        Intent emailAppIntent = getEmailAppIntent();
+        PackageManager packageManager = getCurrentActivity().getPackageManager();
+        List<ResolveInfo> emailAppInfos = packageManager.queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
+
+        ArrayList<String> addedPackages = new ArrayList<>();
+        for (int i = 0; i < emailAppInfos.size(); i++) {
+            ActivityInfo activityInfo = emailAppInfos.get(i).activityInfo;
+            // Prevent Duplicated
+            if (addedPackages.indexOf(activityInfo.packageName) == -1) {
+                addedPackages.add(activityInfo.packageName);
+
+                // Build Map with app data
+                WritableMap emailAppData = new WritableNativeMap();
+                emailAppData.putString("id", activityInfo.packageName);
+                emailAppData.putString("name", packageManager.getApplicationLabel(activityInfo.applicationInfo).toString());
+                Drawable icon = packageManager.getApplicationLogo(activityInfo.applicationInfo);
+                emailAppData.putString("icon", getBase64(icon != null ? icon : packageManager.getDefaultActivityIcon()));
+
+                // Add to array
+                emailAppArray.pushMap(emailAppData);
+            }
+        }
+        promise.resolve(emailAppArray);
+    }
+
+    private String getBase64(Drawable icon) {
+        BitmapDrawable drawable = (BitmapDrawable) icon;
+        Bitmap bitmap = drawable.getBitmap();
+        return encodeToBase64(bitmap, Bitmap.CompressFormat.JPEG, 100);
+    }
+
+    private String encodeToBase64(Bitmap image, Bitmap.CompressFormat compressFormat, int quality) {
+        ByteArrayOutputStream byteArrayOS = new ByteArrayOutputStream();
+        image.compress(compressFormat, quality, byteArrayOS);
+        return Base64.encodeToString(byteArrayOS.toByteArray(), Base64.DEFAULT);
+    }
+
+    @ReactMethod
     public void getLastSelection(Promise promise) {
-        promise.resolve(lastSelection);
+        String selected = lastSelection;
+        lastSelection = null;
+        promise.resolve(selected);
     }
 
     @ReactMethod
@@ -387,7 +442,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
         } else {
             // Get All installed apps that can handle email intent
             PackageManager packageManager = getCurrentActivity().getPackageManager();
-            List<ResolveInfo> emailApps = packageManager.queryIntentActivities(emailAppIntent, PackageManager.MATCH_ALL);
+            List<ResolveInfo> emailApps = packageManager.queryIntentActivities(emailAppIntent, PackageManager.GET_META_DATA);
             ArrayList<String> addedPackages = new ArrayList<>();
             for (int i = 0; i < emailApps.size(); i++) {
                 String packageName = emailApps.get(i).activityInfo.packageName;
