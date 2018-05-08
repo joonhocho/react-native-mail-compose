@@ -326,8 +326,8 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
 
                 // Build Map with app data
                 WritableMap emailAppData = new WritableNativeMap();
-                emailAppData.putString("id", activityInfo.packageName);
-                emailAppData.putString("name", packageManager.getApplicationLabel(activityInfo.applicationInfo).toString());
+                emailAppData.putString("name", activityInfo.packageName);
+                emailAppData.putString("raw", packageManager.getApplicationLabel(activityInfo.applicationInfo).toString());
                 Drawable icon = packageManager.getApplicationLogo(activityInfo.applicationInfo);
                 emailAppData.putString("icon", getBase64(icon != null ? icon : packageManager.getDefaultActivityIcon()));
 
