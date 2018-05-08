@@ -328,7 +328,8 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
                 WritableMap emailAppData = new WritableNativeMap();
                 emailAppData.putString("name", activityInfo.packageName);
                 emailAppData.putString("raw", packageManager.getApplicationLabel(activityInfo.applicationInfo).toString());
-                Drawable icon = packageManager.getApplicationLogo(activityInfo.applicationInfo);
+
+                Drawable icon = packageManager.getApplicationIcon(activityInfo.applicationInfo);
                 emailAppData.putString("icon", getBase64(icon != null ? icon : packageManager.getDefaultActivityIcon()));
 
                 // Add to array
@@ -341,7 +342,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
     private String getBase64(Drawable icon) {
         BitmapDrawable drawable = (BitmapDrawable) icon;
         Bitmap bitmap = drawable.getBitmap();
-        return encodeToBase64(bitmap, Bitmap.CompressFormat.JPEG, 100);
+        return encodeToBase64(bitmap, Bitmap.CompressFormat.PNG, 100);
     }
 
     private String encodeToBase64(Bitmap image, Bitmap.CompressFormat compressFormat, int quality) {
