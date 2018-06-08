@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Base64;
+import android.support.v4.content.FileProvider;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -123,7 +124,12 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                     }
 
                     if (tempFile != null) {
-                        uris.add(Uri.fromFile(tempFile));
+                        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.N){
+                            uris.add(Uri.fromFile(tempFile));
+                        }else{
+                            uris.add(FileProvider.getUriForFile(this.getReactApplicationContext(),
+                                    this.getReactApplicationContext().getPackageName() + ".provider", tempFile));
+                        }
                     }
                 }
             }
@@ -179,7 +185,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
 
     private byte[] getBlob(ReadableMap map, String key) {
         if (map.hasKey(key) && map.getType(key) == ReadableType.String) {
-            String base64 = map.getString(key);
+            String base64 = map.getString(key);Uri
             if (base64 != null && !base64.isEmpty()) {
                 return Base64.decode(base64, 0);
             }
