@@ -45,6 +45,38 @@ public class MainApplication extends Application implements ReactApplication {
     }
 ```
 
+## Additional setup for Android 7.0+
+If your app's `targetSdk` is 24 or higher, [FileProvider](https://developer.android.com/training/secure-file-sharing/setup-sharing) is used when attaching files.
+So, you have to set up FileProvider for your app.
+
+In your app's `AndroidManifest.xml` add `<provider>` 
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.myapp">
+    <application
+        ...>
+      <provider
+          android:name="android.support.v4.content.FileProvider"
+          android:authorities="${applicationId}.provider"
+          android:exported="false"
+          android:grantUriPermissions="true">
+          <meta-data
+              android:name="android.support.FILE_PROVIDER_PATHS"
+              android:resource="@xml/provider_paths"/>
+      </provider>
+        ...
+    </application>
+</manifest>
+```
+
+And in your app's `res/xml` create `provider_paths.xml` with the following content
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+  <external-path name="external_files" path="."/>
+</paths>
+```
+
 ## iOS (Required)
 These steps MUST be done manually. They are NOT done by `react-native install`.
 
