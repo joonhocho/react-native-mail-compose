@@ -185,7 +185,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
 
     private byte[] getBlob(ReadableMap map, String key) {
         if (map.hasKey(key) && map.getType(key) == ReadableType.String) {
-            String base64 = map.getString(key);Uri
+            String base64 = map.getString(key);
             if (base64 != null && !base64.isEmpty()) {
                 return Base64.decode(base64, 0);
             }
