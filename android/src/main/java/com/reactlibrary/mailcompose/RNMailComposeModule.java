@@ -22,6 +22,7 @@ import android.util.Base64;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.widget.Toast;
+import android.os.Build;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Promise;
