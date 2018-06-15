@@ -391,7 +391,12 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
             }
 
             // Create chooser
-            Intent chooserIntent = Intent.createChooser(new Intent(), "Select email app:", getIntentSender()); //TODO: handle <22 API devices
+            Intent chooserIntent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                chooserIntent = Intent.createChooser(new Intent(), "Select email app:", getIntentSender());
+            } else {
+                chooserIntent = Intent.createChooser(new Intent(), "Select email app:");
+            }
             chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.toArray( new Parcelable[mailIntents.size()] ));
             getCurrentActivity().startActivityForResult(chooserIntent, ACTIVITY_SEND);
