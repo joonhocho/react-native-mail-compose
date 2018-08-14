@@ -134,5 +134,10 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
     }
     return false
   }
+    
+    @objc
+    override open static func requiresMainQueueSetup() -> Bool {
+        return false
+    }
 }
 
