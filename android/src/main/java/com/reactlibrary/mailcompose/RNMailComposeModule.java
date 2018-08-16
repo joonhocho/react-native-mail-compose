@@ -35,7 +35,7 @@ import java.util.UUID;
 
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
-    private static final int ACTIVITY_SEND = 129382;
+    private static final int ACTIVITY_SEND = 29382;
 
     private Promise mPromise;
 
