@@ -35,7 +35,7 @@ import java.util.UUID;
 
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
-    private static final int ACTIVITY_SEND = 129382;
+    private static final int ACTIVITY_SEND = 29382;
 
     private Promise mPromise;
 
@@ -123,7 +123,16 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                     }
 
                     if (tempFile != null) {
-                        uris.add(Uri.fromFile(tempFile));
+                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                            Uri apkURI = FileProvider.getUriForFile(
+                                    getReactApplicationContext(),
+                                    getReactApplicationContext().getApplicationContext()
+                                            .getPackageName() + ".provider", tempFile);
+                            intent.setDataAndType(apkURI, "image/*");
+                            uris.add(apkURI);
+                        } else {
+                            uris.add(Uri.fromFile(tempFile));
+                        }
                     }
                 }
             }
