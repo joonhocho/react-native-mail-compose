@@ -123,7 +123,16 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                     }
 
                     if (tempFile != null) {
-                        uris.add(Uri.fromFile(tempFile));
+                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                            Uri apkURI = FileProvider.getUriForFile(
+                                    getReactApplicationContext(),
+                                    getReactApplicationContext().getApplicationContext()
+                                            .getPackageName() + ".provider", tempFile);
+                            intent.setDataAndType(apkURI, "image/*");
+                            uris.add(apkURI);
+                        } else {
+                            uris.add(Uri.fromFile(tempFile));
+                        }
                     }
                 }
             }
