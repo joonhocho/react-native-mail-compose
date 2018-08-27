@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.content.FileProvider;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Base64;
@@ -35,7 +37,7 @@ import java.util.UUID;
 
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
-    private static final int ACTIVITY_SEND = 129382;
+    private static final int ACTIVITY_SEND = 29382;
 
     private Promise mPromise;
 
@@ -123,7 +125,16 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                     }
 
                     if (tempFile != null) {
-                        uris.add(Uri.fromFile(tempFile));
+                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                            Uri apkURI = FileProvider.getUriForFile(
+                                    getReactApplicationContext(),
+                                    getReactApplicationContext().getApplicationContext()
+                                            .getPackageName() + ".provider", tempFile);
+                            intent.setDataAndType(apkURI, "image/*");
+                            uris.add(apkURI);
+                        } else {
+                            uris.add(Uri.fromFile(tempFile));
+                        }
                     }
                 }
             }
