@@ -116,4 +116,9 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
     
     controller.dismiss(animated: true, completion: nil)
   }
+  
+  @objc
+  static func requiresMainQueueSetup() -> Bool {
+      return false
+  }
 }
