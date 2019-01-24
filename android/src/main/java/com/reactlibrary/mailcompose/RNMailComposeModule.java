@@ -22,6 +22,7 @@ import android.util.Base64;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.widget.Toast;
+import android.os.Build;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Promise;
@@ -399,7 +400,12 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
             }
 
             // Create chooser
-            Intent chooserIntent = Intent.createChooser(new Intent(), "Select email app:", getIntentSender()); //TODO: handle <22 API devices
+            Intent chooserIntent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                chooserIntent = Intent.createChooser(new Intent(), "Select email app:", getIntentSender());
+            } else {
+                chooserIntent = Intent.createChooser(new Intent(), "Select email app:");
+            }
             chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, mailIntents.toArray( new Parcelable[mailIntents.size()] ));
             getCurrentActivity().startActivityForResult(chooserIntent, ACTIVITY_SEND);
