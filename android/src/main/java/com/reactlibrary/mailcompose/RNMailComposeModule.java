@@ -53,6 +53,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import android.support.annotation.NonNull;
+
 public class RNMailComposeModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private final ReactApplicationContext reactContext;
     private static final int ACTIVITY_SEND = 129382;
