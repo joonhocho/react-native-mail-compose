@@ -356,9 +356,17 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule implements A
         promise.resolve(emailAppArray);
     }
 
+    @NonNull
+    static private Bitmap getBitmapFromDrawable(@NonNull Drawable drawable) {
+        final Bitmap bmp = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(bmp);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bmp;
+    }
+
     private String getBase64(Drawable icon) {
-        BitmapDrawable drawable = (BitmapDrawable) icon;
-        Bitmap bitmap = drawable.getBitmap();
+        Bitmap bitmap = getBitmapFromDrawable(icon);
         return encodeToBase64(bitmap, Bitmap.CompressFormat.PNG, 100);
     }
 
