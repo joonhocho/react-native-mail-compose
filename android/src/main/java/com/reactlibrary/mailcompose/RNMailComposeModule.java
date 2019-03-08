@@ -46,11 +46,10 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent intent) {
             if (requestCode == ACTIVITY_SEND) {
                 if (mPromise != null) {
-                    if (resultCode == Activity.RESULT_CANCELED) {
-                        mPromise.reject("cancelled", "Operation has been cancelled");
-                    } else {
-                        mPromise.resolve("sent");
-                    }
+                    //no matter what is the action on the email apps, the resultCode will reply for 0 or equals to RESULT_CANCEL
+                    //refer to: https://stackoverflow.com/questions/3778048/how-can-we-use-startactivityforresult-for-email-intent
+                    //always treat it as sent after user redirected to the mailing apps
+                    mPromise.resolve("sent");
                     mPromise = null;
                 }
             }
