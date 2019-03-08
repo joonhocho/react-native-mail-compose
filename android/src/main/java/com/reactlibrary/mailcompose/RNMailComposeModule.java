@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Base64;
+import android.support.v4.content.FileProvider;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -127,7 +128,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
 
                     if (tempFile != null) {
                         Uri tempFileUri = FileProvider.getUriForFile(getCurrentActivity(),this.getReactApplicationContext().getPackageName()+".provider",tempFile);
-                        uris.add(Uri.fromFile(tempFileUri));
+                        uris.add(tempFileUri);
                     }
                 }
             }
