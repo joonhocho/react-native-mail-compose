@@ -107,6 +107,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                 if (attachment != null) {
                     byte[] blob = getBlob(attachment, "data");
                     String text = getString(attachment, "text");
+                    String url = getString(attachment,"url");
                     // String mimeType = getString(attachment, "mimeType");
                     String filename = getString(attachment, "filename");
                     if (filename == null) {
@@ -120,10 +121,13 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                         tempFile = writeBlob(tempFile, blob);
                     } else if (text != null) {
                         tempFile = writeText(tempFile, text);
+                    } else if(url != null){
+                        tempFile = new File(url);
                     }
 
                     if (tempFile != null) {
-                        uris.add(Uri.fromFile(tempFile));
+                        Uri tempFileUri = FileProvider.getUriForFile(getCurrentActivity(),this.getReactApplicationContext().getPackageName()+".provider",tempFile);
+                        uris.add(Uri.fromFile(tempFileUri));
                     }
                 }
             }
