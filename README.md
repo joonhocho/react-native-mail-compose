@@ -81,7 +81,8 @@ async sendMail() {
         ext: '.txt',
         mimeType: 'text/plain',
         text: 'Hello my friend', // Use this if the data is in UTF8 text.
-        data: '...BASE64_ENCODED_STRING...', // Or, use this if the data is not in plain text.
+        data: '...BASE64_ENCODED_STRING...', // Or, use this if the data is not in plain text.,
+        url:'path to the file' // Use this if the data is path to the attachment file
       }],
     });
   } catch (e) {

@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Base64;
+import android.support.v4.content.FileProvider;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -35,7 +36,10 @@ import java.util.UUID;
 
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
-    private static final int ACTIVITY_SEND = 129382;
+
+    //Updating to RN 0.59.*
+    //Fixing issue: can only use lower 16 bits for requestCode on Intent
+    private static final int ACTIVITY_SEND = 65510;
 
     private Promise mPromise;
 
@@ -45,11 +49,10 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
         public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent intent) {
             if (requestCode == ACTIVITY_SEND) {
                 if (mPromise != null) {
-                    if (resultCode == Activity.RESULT_CANCELED) {
-                        mPromise.reject("cancelled", "Operation has been cancelled");
-                    } else {
-                        mPromise.resolve("sent");
-                    }
+                    //no matter what is the action on the email apps, the resultCode will reply for 0 or equals to RESULT_CANCEL
+                    //refer to: https://stackoverflow.com/questions/3778048/how-can-we-use-startactivityforresult-for-email-intent
+                    //always treat it as sent after user redirected to the mailing apps
+                    mPromise.resolve("sent");
                     mPromise = null;
                 }
             }
@@ -107,6 +110,7 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                 if (attachment != null) {
                     byte[] blob = getBlob(attachment, "data");
                     String text = getString(attachment, "text");
+                    String url = getString(attachment,"url");
                     // String mimeType = getString(attachment, "mimeType");
                     String filename = getString(attachment, "filename");
                     if (filename == null) {
@@ -120,10 +124,13 @@ public class RNMailComposeModule extends ReactContextBaseJavaModule {
                         tempFile = writeBlob(tempFile, blob);
                     } else if (text != null) {
                         tempFile = writeText(tempFile, text);
+                    } else if(url != null){
+                        tempFile = new File(url);
                     }
 
                     if (tempFile != null) {
-                        uris.add(Uri.fromFile(tempFile));
+                        Uri tempFileUri = FileProvider.getUriForFile(getCurrentActivity(),this.getReactApplicationContext().getPackageName()+".provider",tempFile);
+                        uris.add(tempFileUri);
                     }
                 }
             }
