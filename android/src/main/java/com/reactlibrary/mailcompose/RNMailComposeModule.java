@@ -36,7 +36,10 @@ import java.util.UUID;
 
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule {
-    private static final int ACTIVITY_SEND = 129382;
+
+    //Updating to RN 0.59.*
+    //Fixing issue: can only use lower 16 bits for requestCode on Intent
+    private static final int ACTIVITY_SEND = 65510;
 
     private Promise mPromise;
 

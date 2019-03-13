@@ -1,7 +1,7 @@
 
 {
   "name": "react-native-mail-compose",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "React Native library for composing email. Wraps MFMailComposeViewController for iOS and Intent for Android.",
   "main": "index.js",
   "scripts": {
@@ -24,6 +24,9 @@
     "android"
   ],
   "author": "Joon Ho Cho <joonho1101@gmail.com>",
+  "contributors":[
+    "Willy Martin <lucky.nowarzz@gmail.com> (https://github.com/nowarzz)"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/joonhocho/react-native-mail-compose/issues"
