@@ -57,7 +57,7 @@ import android.support.annotation.NonNull;
 
 public class RNMailComposeModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private final ReactApplicationContext reactContext;
-    private static final int ACTIVITY_SEND = 129382;
+    private static final int ACTIVITY_SEND = 12938;
     public static String lastSelection = null;
     private Promise mPromise;
 
