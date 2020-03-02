@@ -21,4 +21,9 @@ RCT_EXTERN_METHOD(send:(NSDictionary *)data
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject);
 
++ (BOOL)requiresMainQueueSetup
+{
+  return NO;
+}
+
 @end
