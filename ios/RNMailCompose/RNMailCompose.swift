@@ -72,7 +72,7 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
 
       if let value = data["attachments"] as? [[String: String]] {
         for dict in value {
-          if let data = self.textToData(utf8: dict["text"], base64: dict["data"]), let mimeType = dict["mimeType"], let filename = toFilename(filename: dict["filename"], ext: dict["ext"]) {
+          if let data = self.textToData(utf8: dict["text"], base64: dict["data"]), let mimeType = dict["mimeType"], let filename = self.toFilename(filename: dict["filename"], ext: dict["ext"]) {
             vc.addAttachmentData(data, mimeType: mimeType, fileName: filename)
           }
           if let url = dict["url"], let mimeType = dict["mimeType"], let filename = self.toFilename(filename: dict["filename"], ext: dict["ext"]) {
