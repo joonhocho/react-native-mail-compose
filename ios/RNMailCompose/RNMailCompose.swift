@@ -48,52 +48,54 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
       return
     }
     
-    let vc = MFMailComposeViewController()
-    
-    if let value = data["subject"] as? String {
-      vc.setSubject(value)
-    }
-    if let value = data["toRecipients"] as? [String] {
-      vc.setToRecipients(value)
-    }
-    if let value = data["ccRecipients"] as? [String] {
-      vc.setCcRecipients(value)
-    }
-    if let value = data["bccRecipients"] as? [String] {
-      vc.setBccRecipients(value)
-    }
-    if let value = data["body"] as? String {
-      vc.setMessageBody(value, isHTML: false)
-    }
-    if let value = data["html"] as? String {
-      vc.setMessageBody(value, isHTML: true)
-    }
-    
-    if let value = data["attachments"] as? [[String: String]] {
-      for dict in value {
-        if let data = textToData(utf8: dict["text"], base64: dict["data"]), let mimeType = dict["mimeType"], let filename = toFilename(filename: dict["filename"], ext: dict["ext"]) {
-          vc.addAttachmentData(data, mimeType: mimeType, fileName: filename)
-        }
-        if let url = dict["url"], let mimeType = dict["mimeType"], let filename = toFilename(filename: dict["filename"], ext: dict["ext"]) {
-            do {
-                try vc.addAttachmentData(Data(contentsOf: URL(fileURLWithPath: url)), mimeType: mimeType, fileName: filename)
-            } catch let error {
-                reject("fileNotFound", "File not found", error)
-            }
+    DispatchQueue.main.async {
+      let vc = MFMailComposeViewController()
+
+      if let value = data["subject"] as? String {
+        vc.setSubject(value)
+      }
+      if let value = data["toRecipients"] as? [String] {
+        vc.setToRecipients(value)
+      }
+      if let value = data["ccRecipients"] as? [String] {
+        vc.setCcRecipients(value)
+      }
+      if let value = data["bccRecipients"] as? [String] {
+        vc.setBccRecipients(value)
+      }
+      if let value = data["body"] as? String {
+        vc.setMessageBody(value, isHTML: false)
+      }
+      if let value = data["html"] as? String {
+        vc.setMessageBody(value, isHTML: true)
+      }
+
+      if let value = data["attachments"] as? [[String: String]] {
+        for dict in value {
+          if let data = textToData(utf8: dict["text"], base64: dict["data"]), let mimeType = dict["mimeType"], let filename = toFilename(filename: dict["filename"], ext: dict["ext"]) {
+            vc.addAttachmentData(data, mimeType: mimeType, fileName: filename)
+          }
+          if let url = dict["url"], let mimeType = dict["mimeType"], let filename = toFilename(filename: dict["filename"], ext: dict["ext"]) {
+              do {
+                  try vc.addAttachmentData(Data(contentsOf: URL(fileURLWithPath: url)), mimeType: mimeType, fileName: filename)
+              } catch let error {
+                  reject("fileNotFound", "File not found", error)
+              }
+          }
         }
       }
+
+      vc.mailComposeDelegate = self
+
+      self.resolve = resolve
+      self.reject = reject
+
+      var rootVC = UIApplication.shared.keyWindow?.rootViewController;
+      while (rootVC?.presentedViewController != nil) {
+        rootVC = rootVC?.presentedViewController;
+      }
+      rootVC?.present(vc, animated: true, completion: nil)
     }
-    
-    vc.mailComposeDelegate = self
-    
-    self.resolve = resolve
-    self.reject = reject
-    
-    var rootVC = UIApplication.shared.keyWindow?.rootViewController;
-    while (rootVC?.presentedViewController != nil) {
-      rootVC = rootVC?.presentedViewController;
-    }
-    rootVC?.present(vc, animated: true, completion: nil)
   }
   
   func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
@@ -119,6 +121,6 @@ class RNMailCompose: NSObject, MFMailComposeViewControllerDelegate {
   
   @objc
   static func requiresMainQueueSetup() -> Bool {
-      return false
+      return true
   }
 }
